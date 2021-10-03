@@ -70,7 +70,7 @@ const query=()=>{
                 
                 return true;
             })
-            if(availableStores.length>0){
+            if(availableStores.length>0&&s.partsAvailability[part].pickupMessage){
                 let msg=availableStores.map(s=>`${s.storeName}:${s.partsAvailability[part].pickupMessage}`).join('\n');
                 console.log(`发现库存`,msg);
                 if(new Date()-lastAlert>pushInterval){
