@@ -1,17 +1,49 @@
 import fetch from 'node-fetch'
 
+
+
 const appleUrl='https://www.apple.com.cn/shop/fulfillment-messages?pl=true&parts.0=MLTC3CH/A&location=%E5%A4%A9%E6%B4%A5%20%E5%A4%A9%E6%B4%A5%20%E5%8D%97%E5%BC%80%E5%8C%BA'
 
-const sendUrl=`https://XXX` //Wecomchan 推送接口
+const sendUrl=process.env.SENDURL //Wecomchan 推送接口
 
-const part='MLTC3CH/A'
+const sendKey=process.env.SENDKEY
 
-const interval=1000*60*3
+const logUrl=process.env.LOGURL || sendUrl
+
+const logKey=process.env.LOGKEY
+
+const part=process.env.MODEL || 'MLTC3CH/A'
+
+const pushInterval=process.env.PUSHINTERVAL || 1000*60*5
+
+const queryInterval=process.env.INTERVAL || 1000
+
+const to=process.env.TOUSERS
 
 var lastAlert=new Date();
 
 const queryCount={
 
+}
+
+const checkParam=()=>{
+    if(!sendUrl){
+        console.error('发送接口错误');
+        return false;
+    }
+    if(!logUrl){
+        console.error('日志接口错误');
+        return false;
+    }
+    if(isNaN(pushInterval)){
+        console.error('通知间隔无效，默认5分钟');
+        logInterval=1000*60*5;
+    }
+    if(isNaN(queryInterval)||queryInterval<500){
+        console.error('查询间隔无效，默认1秒');
+        queryInterval=1000;
+    }
+    return true;
 }
 
 const query=()=>{
@@ -41,7 +73,7 @@ const query=()=>{
             if(availableStores.length>0){
                 let msg=availableStores.map(s=>`${s.storeName}:${s.partsAvailability[part].pickupMessage}`).join('\n');
                 console.log(`发现库存`,msg);
-                if(new Date()-lastAlert>interval){
+                if(new Date()-lastAlert>pushInterval){
                     sendMessage('iPhone 13 Pro 到货啦！',)
                     lastAlert=new Date();
                 }
@@ -62,7 +94,7 @@ const heartbeat=()=>{
             msg.push(i,data);
         }
 
-        sendMessage('程序运行中，检测数据如下',msg.join('\n'));
+        logMessage('程序运行中，检测数据如下',msg.join('\n'));
         for(let s in queryCount){
             queryCount[s]=0;
         }
@@ -70,21 +102,37 @@ const heartbeat=()=>{
     console.log('Running');
 }
 
-const sendMessage=(title,msg)=>{
-    fetch(`${sendUrl}`,{
-        method:'POST',
-        body:JSON.stringify({
-            sendkey:'XXXXXX',
-            msg_type:'text',            
-            msg:`${title}\n${msg||''}`,
-            to_user:''
+const pushMessage=async (title,msg,url,key)=>{
+    try {
+        const res = await fetch(`${url}`, {
+            method: 'POST',
+            body: JSON.stringify({
+                sendkey: key,
+                msg_type: 'text',
+                msg: `${title}\n${msg || ''}`,
+                to_user: to
+            })
         })
-    }).then(res=>res.json())
-    .then(data=>console.log(data))
-    .catch(err=>console.log(`send error: ${err}`))
+        const data = await res.json()
+        return console.log(data)
+    } catch (err) {
+        return console.log(`send error: ${err}`)
+    }
 }
 
-sendMessage('程序启动','开始检测库存...');
-query();
-setInterval(query,0.5*1000)
-setInterval(heartbeat,5*60*1000)
+const sendMessage=(title,msg)=>pushMessage(title,msg,sendUrl,sendKey)
+
+const logMessage=(title,msg)=>pushMessage(title,msg,logUrl,logKey)
+
+const main=()=>{
+    if(!checkParam()){
+        return;
+    };
+    logMessage('程序启动','开始检测库存...');
+    sendMessage('程序启动','推送接口测试');
+    query();
+    setInterval(query,queryInterval)
+    setInterval(heartbeat,5*60*1000)
+}
+
+main();
