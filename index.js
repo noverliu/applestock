@@ -48,8 +48,18 @@ const checkParam=()=>{
 
 const query=()=>{
     fetch(appleUrl)
-    .then(res=>res.json())
+    .then(res=>{
+        if(res.status>200){
+            console.error(`Http error: ${res.status}`);
+            return res.text();
+        }
+        return res.json();
+    })
     .then(data=>{
+        if(typeof(data)==='string'){
+            // console.log(data);
+            throw 'Wrong request';
+        }
         let stores=data.body.content.pickupMessage.stores
         if(Array.isArray(stores)){
             // console.log(`查询时间：${Date()}`)
@@ -80,7 +90,7 @@ const query=()=>{
             }
         }
     })
-    .catch(err=>console.error(err));
+    .catch((err,res)=>console.error(err));
 }
 
 
