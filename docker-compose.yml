@@ -1,0 +1,17 @@
+version: '3.5'
+
+services: 
+  ipstock:
+    build:
+      context: /home/spraus/Sources/Repos/applestock
+      dockerfile: dockerfile
+    image: ipstock
+    container_name: ipstock
+    restart: unless-stopped
+    environment: 
+      - SENDURL=https://service-jyoml2qv-1255755240.bj.apigw.tencentcs.com/release/wecomchan
+      - LOGURL=https://service-emae52ej-1255755240.bj.apigw.tencentcs.com/release/wecomlog
+      - SENDKEY=xxxx
+      - LOGKEY=xxxx
+      - TOUSERS=LiuChunRui
+      - INTERVAL=3000
